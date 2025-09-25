@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - Toilet Tracker</title>
+  
+  <link rel="manifest" id="manifest-link">
+  <meta name="theme-color" content="#ffffff">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <script>
+    if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  </script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Thai"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body { background-color: #f0f4f8; font-family: 'Noto Sans Thai', sans-serif; transition: background-color 0.3s ease-in-out; }
+    .dark body { background-color: #0f172a; }
+    .main-container { background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+    .dark .main-container { background: rgba(26, 37, 58, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px);  } to { opacity: 1; transform: translateY(0); } }
+    .animate-fadeInUp { animation: fadeInUp 0.5s ease-out forwards; }
+    .modal { transition: opacity 0.3s ease-in-out; }
+    
+    /* --- CSS ที่แก้ไขเพื่อให้ Modal เลื่อนได้ --- */
+    .modal-content { 
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+      transform: scale(0.95); 
+      opacity: 0; 
+      max-height: 90vh; /* กำหนดความสูงสูงสุดของ modal */
+      overflow-y: auto; /* ทำให้เกิด scrollbar แนวตั้งเมื่อเนื้อหาเกิน */
+    }
+
+    .modal.active .modal-content { transform: scale(1); opacity: 1; }
+    .chat-bubble-user { background-color: #3b82f6; color: white; }
+    .chat-bubble-bot { background-color: #e5e7eb; color: #1f2937; }
+    .dark .chat-bubble-bot { background-color: #4b5563; color: #e5e7eb; }
+  </style>
+</head>
+<body class="font-sans">
+
+  <div class="main-container rounded-2xl shadow-xl m-4 md:m-8 p-6 sm:p-9 min-h-[calc(100vh-2rem)]">
+    <header class="flex flex-wrap items-center justify-between mb-8">
+      <div class="flex items-center">
+        <img src="image /Logo desige-Photoroom.png" alt="Logo" class="h-40 w-auto">
+        <h1 class="text-3xl font-bold text-slate-700 dark:text-slate-200 ml-6 hidden md:block">Admin Dashboard</h1>
+      </div>
+      <div class="text-slate-600 font-medium mt-4 sm:mt-0 flex items-center gap-3">
+        <button id="theme-toggle-btn" class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors duration-300">
+            <svg id="theme-toggle-sun-icon" class="w-6 h-6 text-slate-700 dark:text-slate-200" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z" /></svg>
+            <svg id="theme-toggle-moon-icon" class="w-6 h-6 text-slate-700 dark:text-slate-200 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z" /></svg>
+        </button>
+        <button id="logout-btn" class="ml-2 bg-white dark:bg-slate-700 text-red-500 dark:text-red-400 dark:hover:bg-red-900/20 font-semibold text-sm py-2 px-5 rounded-full hover:bg-red-50 transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 active:scale-95 flex items-center gap-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-5 h-5"><path fill-rule="evenodd" d="M3 4.25A2.25 2.25 0 015.25 2h5.5A2.25 2.25 0 0113 4.25v2a.75.75 0 01-1.5 0v-2a.75.75 0 00-.75-.75h-5.5a.75.75 0 00-.75.75v11.5c0 .414.336.75.75.75h5.5a.75.75 0 00.75-.75v-2a.75.75 0 011.5 0v2A2.25 2.25 0 0110.75 18h-5.5A2.25 2.25 0 013 15.75V4.25z" clip-rule="evenodd" /><path fill-rule="evenodd" d="M6 10a.75.75 0 01.75-.75h9.546l-1.048-1.047a.75.75 0 111.06-1.06l2.5 2.5a.75.75 0 010 1.06l-2.5 2.5a.75.75 0 11-1.06-1.06l1.048-1.047H6.75A.75.75 0 016 10z" clip-rule="evenodd" /></svg>
+          ออกจากระบบ
+        </button>
+      </div>
+    </header>
+
+    <main>
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-10">
+            <h2 class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-slate-600 to-slate-800 dark:from-slate-300 dark:to-slate-400">
+              รายการปัญหาทั้งหมด
+            </h2>
+            <button id="add-problem-btn" class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold text-base py-3 px-8 rounded-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform active:scale-95">
+                + เพิ่มปัญหา
+            </button>
+        </div>
+
+        <section>
+            <div id="problem-list-container" class="min-h-[20rem] w-full max-w-full mx-auto">
+                <div id="problem-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  </div>
+            </div>
+        </section>
+    </main>
+  </div>
+
+  <div id="modal" class="modal fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center p-4 z-50 hidden">
+    <div class="modal-content bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-6 sm:p-8 max-w-md w-full border dark:border-slate-700">
+      <div class="flex justify-between items-center mb-6">
+        <h2 id="modal-title" class="text-xl font-semibold text-slate-800 dark:text-slate-200">เพิ่มปัญหาใหม่</h2>
+        <button id="close-modal-btn" class="text-slate-500 hover:text-slate-800 dark:hover:text-slate-300 text-2xl">&times;</button>
+      </div>
+      <form id="problem-form">
+        <div class="mb-5">
+            <label class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">แนบรูปภาพ (ถ้ามี)</label>
+            <div class="flex items-center gap-4">
+                <label for="image-input" class="cursor-pointer flex-shrink-0 flex items-center justify-center w-24 h-24 bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors relative border-2 border-dashed dark:border-slate-600">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.776 48.776 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" /><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0zM18.75 10.5h.008v.008h-.008V10.5z" /></svg>
+                    <img id="image-preview" class="absolute inset-0 w-full h-full object-cover rounded-lg hidden" />
+                </label>
+                <input type="file" id="image-input" accept="image/*" class="hidden" />
+                <div class="relative w-full">
+                    <button type="button" id="remove-image-btn" class="absolute -top-2 -right-2 text-xs bg-red-100 text-red-700 w-6 h-6 rounded-full hover:bg-red-200 hidden items-center justify-center flex">&times;</button>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">ไฟล์รูปภาพจะช่วยให้เข้าใจปัญหาได้ดียิ่งขึ้น</p>
+                </div>
+            </div>
+        </div>
+         <div class="mb-4">
+          <label for="problem-category" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">หมวดหมู่ปัญหา</label>
+          <select id="problem-category" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <option>ทั่วไป</option>
+            <option>ท่อตัน / ชักโครก</option>
+            <option>น้ำรั่ว / ซึม</option>
+            <option>ความสะอาด</option>
+            <option>ของใช้หมด (กระดาษ/สบู่)</option>
+            <option>ไฟฟ้า / แสงสว่าง</option>
+          </select>
+        </div>
+        <div class="mb-4">
+          <label for="room-id" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">ห้องน้ำ</label>
+          <input type="text" id="room-id" placeholder="ระบุตำแหน่งให้ชัดเจน" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div>
+                 <label for="user-name" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">ชื่อผู้แจ้ง</label>
+                 <input type="text" id="user-name" placeholder="ชื่อ-นามสกุล" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required/>
+            </div>
+            <div>
+                <label for="user-status" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">สถานะผู้แจ้ง</label>
+                <select id="user-status" class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                  <option>นักเรียน</option>
+                  <option>บุคลากรทางการศึกษา</option>
+                  <option>เจ้าหน้าที่</option>
+                  <option>ผู้ปกครอง/อื่นๆ</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-lg mb-4 border dark:border-slate-700">
+            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">ข้อมูลติดต่อกลับ</p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                     <label for="user-phone" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">เบอร์โทรศัพท์</label>
+                     <input type="tel" id="user-phone" placeholder="0XX-XXX-XXXX" class="w-full p-2 text-sm border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                </div>
+                <div>
+                    <label for="user-email" class="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">อีเมล</label>
+                    <input type="email" id="user-email" placeholder="example@email.com" class="w-full p-2 text-sm border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"/>
+                </div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+          <label for="problem-desc" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">คำอธิบายปัญหา</label>
+          <textarea id="problem-desc" rows="3" placeholder="อธิบายรายละเอียดเพิ่มเติม..." class="w-full p-2 border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required></textarea>
+        </div>
+        <button type="submit" id="submit-btn" class="w-full bg-blue-500 text-white font-bold py-2.5 px-4 rounded-lg hover:bg-blue-600 transition-colors duration-300 flex items-center justify-center gap-2">
+          บันทึก
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div id="image-viewer-modal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 hidden p-4">
+    <button id="close-viewer-btn" class="absolute top-4 right-5 text-white text-4xl cursor-pointer hover:opacity-75">&times;</button>
+    <img id="viewer-image" class="max-w-full max-h-full rounded-xl border-4 border-white shadow-2xl" />
+  </div>
+
+  <div id="chatbot-fab" class="fixed bottom-6 right-6 z-40 cursor-pointer">
+      <div class="bg-blue-600 dark:bg-blue-500 text-white w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-transform hover:scale-110">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" /></svg>
+      </div>
+  </div>
+  <div id="chatbot-window" class="fixed bottom-24 right-6 z-40 w-80 h-[28rem] bg-white dark:bg-slate-800 rounded-xl shadow-2xl flex-col hidden transition-transform origin-bottom-right">
+      <div class="bg-blue-600 dark:bg-slate-700 text-white p-4 rounded-t-xl flex justify-between items-center">
+          <h3 class="font-semibold">ผู้ช่วย AI</h3>
+          <button id="close-chatbot-btn" class="text-white">&times;</button>
+      </div>
+      <div id="chatbot-messages" class="flex-1 p-4 overflow-y-auto"></div>
+      <div class="p-2 border-t dark:border-slate-700">
+          <form id="chatbot-form" class="flex items-center gap-2">
+              <input id="chatbot-input" type="text" placeholder="พิมพ์ข้อความ..." class="w-full p-2 text-sm border border-slate-300 dark:border-slate-600 dark:bg-slate-700 dark:text-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500">
+              <button type="submit" class="bg-blue-500 text-white rounded-lg p-2 flex-shrink-0 hover:bg-blue-600">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" /></svg>
+              </button>
+          </form>
+      </div>
+  </div>
+
+
+  <script>
+    // --- All variables ---
+    const addProblemBtn = document.getElementById('add-problem-btn');
+    const modal = document.getElementById('modal');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const problemForm = document.getElementById('problem-form');
+    const problemList = document.getElementById('problem-list');
+    const logoutBtn = document.getElementById('logout-btn');
+    const modalTitle = document.getElementById('modal-title');
+    const submitBtn = document.getElementById('submit-btn');
+    const imageInput = document.getElementById('image-input');
+    const imagePreview = document.getElementById('image-preview');
+    const removeImageBtn = document.getElementById('remove-image-btn');
+    const imageViewerModal = document.getElementById('image-viewer-modal');
+    const viewerImage = document.getElementById('viewer-image');
+    const closeViewerBtn = document.getElementById('close-viewer-btn');
+    const themeToggleBtn = document.getElementById('theme-toggle-btn');
+    const sunIcon = document.getElementById('theme-toggle-sun-icon');
+    const moonIcon = document.getElementById('theme-toggle-moon-icon');
+    const chatbotFab = document.getElementById('chatbot-fab');
+    const chatbotWindow = document.getElementById('chatbot-window');
+    const closeChatbotBtn = document.getElementById('close-chatbot-btn');
+    const chatbotForm = document.getElementById('chatbot-form');
+    const chatbotInput = document.getElementById('chatbot-input');
+    const chatbotMessages = document.getElementById('chatbot-messages');
+    
+    let currentEditingProblemElement = null;
+
+    // --- Dark Mode Logic ---
+    function updateThemeIcons() {
+        if (document.documentElement.classList.contains('dark')) {
+            sunIcon.classList.add('hidden'); moonIcon.classList.remove('hidden');
+        } else {
+            sunIcon.classList.remove('hidden'); moonIcon.classList.add('hidden');
+        }
+    }
+    themeToggleBtn.addEventListener('click', () => {
+        document.documentElement.classList.toggle('dark');
+        localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+        updateThemeIcons();
+    });
+
+    // --- Modal Control Logic ---
+    function openModal(modalElement) {
+        modalElement.classList.remove('hidden');
+        setTimeout(() => modalElement.classList.add('active'), 10);
+    }
+    function closeModal(modalElement) {
+        modalElement.classList.remove('active');
+        setTimeout(() => modalElement.classList.add('hidden'), 300);
+    }
+    addProblemBtn.addEventListener('click', () => { resetProblemForm(); openModal(modal); });
+    closeModalBtn.addEventListener('click', () => closeModal(modal));
+    modal.addEventListener('click', (event) => { if (event.target === modal) closeModal(modal); });
+    closeViewerBtn.addEventListener('click', () => closeModal(imageViewerModal));
+    imageViewerModal.addEventListener('click', (e) => { if(e.target === imageViewerModal) closeModal(imageViewerModal); });
+    logoutBtn.addEventListener('click', () => {
+        alert('ออกจากระบบเรียบร้อย');
+        window.location.href = 'index.html';
+    });
+    
+    function resetProblemForm() {
+        problemForm.reset();
+        removeImageBtn.click();
+        currentEditingProblemElement = null;
+        modalTitle.textContent = 'เพิ่มปัญหาใหม่';
+        submitBtn.textContent = 'บันทึก';
+    }
+
+    // --- Image Handling Logic ---
+    imageInput.addEventListener('change', () => {
+      const file = imageInput.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          imagePreview.src = e.target.result;
+          imagePreview.classList.remove('hidden');
+          removeImageBtn.classList.remove('hidden');
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+    removeImageBtn.addEventListener('click', () => {
+      imageInput.value = '';
+      imagePreview.src = '';
+      imagePreview.classList.add('hidden');
+      removeImageBtn.classList.add('hidden');
+    });
+
+    function applyStaggerAnimation() {
+        const items = document.querySelectorAll('.problem-item');
+        items.forEach((item, index) => {
+            item.style.animationDelay = `${index * 100}ms`;
+            item.classList.add('animate-fadeInUp');
+        });
+    }
+
+    // --- Status Badge Logic ---
+    function renderStatusBadge(status) {
+        const baseClasses = "status-badge cursor-pointer text-xs font-medium py-1 px-3 rounded-full flex-shrink-0 transition-colors";
+        switch(status) {
+            case 'in-progress': return `<div class="${baseClasses} text-blue-600 bg-blue-100 hover:bg-blue-200 dark:text-blue-300 dark:bg-blue-500/20 dark:hover:bg-blue-500/30">กำลังดำเนินการ</div>`;
+            case 'completed': return `<div class="${baseClasses} text-green-600 bg-green-100 hover:bg-green-200 dark:text-green-300 dark:bg-green-500/20 dark:hover:bg-green-500/30">ดำเนินการแล้ว</div>`;
+            default: return `<div class="${baseClasses} text-orange-600 bg-orange-100 hover:bg-orange-200 dark:text-orange-300 dark:bg-orange-500/20 dark:hover:bg-orange-500/30">รอดำเนินการ</div>`;
+        }
+    }
+
+    // --- Card Rendering Logic ---
+    function createProblemCardHTML(data) {
+        const imageHTML = data.imgSrc ? `<img src="${data.imgSrc}" class="w-full h-40 object-cover clickable-img cursor-pointer">` : '';
+        const statusBadgeHTML = renderStatusBadge(data.status);
+        const phoneHTML = data.userPhone ? `
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 mr-2 flex-shrink-0"><path fill-rule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h1.148a1.5 1.5 0 011.465 1.175l.716 3.223a1.5 1.5 0 01-1.052 1.767l-.23.102a11.959 11.959 0 006.052 6.052l.102-.23a1.5 1.5 0 011.767-1.052l3.223.716A1.5 1.5 0 0118 15.352V16.5a1.5 1.5 0 01-1.5 1.5h-1.5a13.5 13.5 0 01-13.5-13.5v-1.5z" clip-rule="evenodd" /></svg>
+                <span class="truncate">${data.userPhone}</span>
+            </div>` : '';
+        const emailHTML = data.userEmail ? `
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4 mr-2 flex-shrink-0"><path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.162V6a2 2 0 00-2-2H3z" /><path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" /></svg>
+                <span class="truncate">${data.userEmail}</span>
+            </div>` : '';
+        const contactInfoHTML = (data.userPhone || data.userEmail) ? `
+            <div class="border-t dark:border-slate-600 pt-3 mt-3 text-xs text-slate-600 dark:text-slate-400 space-y-2">
+                ${phoneHTML}
+                ${emailHTML}
+            </div>` : '';
+
+        return `
+            ${imageHTML}
+            <div class="p-4 flex flex-col flex-grow">
+                <div class="flex justify-between items-start mb-2">
+                    <h4 class="font-bold text-slate-800 dark:text-slate-200 text-md truncate pr-2">${data.roomId}</h4>
+                    ${statusBadgeHTML}
+                </div>
+                <p class="text-xs text-slate-500 dark:text-slate-400 mb-2">หมวด: ${data.category}</p>
+                <p class="text-slate-600 dark:text-slate-400 text-sm mb-3 flex-grow min-h-[3rem]">${data.problemDesc}</p>
+                <div class="text-xs text-slate-400 dark:text-slate-500">
+                    โดย: <strong class="dark:text-slate-300 font-semibold">${data.userName}</strong> (${data.userStatus})<br>
+                    เวลา: ${data.formattedTime}
+                </div>
+                ${contactInfoHTML}
+                <div class="border-t dark:border-slate-600 pt-3 mt-auto flex justify-end gap-2">
+                    <button class="edit-btn p-2 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-yellow-400 dark:hover:bg-yellow-500 text-slate-600 dark:text-slate-300 hover:text-white dark:hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path d="M5.433 13.917l1.262-3.155A4 4 0 017.58 9.42l6.92-6.918a2.121 2.121 0 013 3l-6.92 6.918c-.383.383-.84.685-1.343.886l-3.154 1.262a.5.5 0 01-.65-.65z" /><path d="M3.5 5.75c0-.69.56-1.25 1.25-1.25H10A.75.75 0 0010 3H4.75A2.75 2.75 0 002 5.75v9.5A2.75 2.75 0 004.75 18h9.5A2.75 2.75 0 0017 15.25V10a.75.75 0 00-1.5 0v5.25c0 .69-.56 1.25-1.25 1.25h-9.5c-.69 0-1.25-.56-1.25-1.25v-9.5z" /></svg></button>
+                    <button class="delete-btn p-2 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-red-500 dark:hover:bg-red-500 text-slate-600 dark:text-slate-300 hover:text-white dark:hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.58.22-2.365.468a.75.75 0 10.23 1.482l.149-.046A4.992 4.992 0 014.75 6.25v1.5a.75.75 0 01-1.5 0v-1.5a6.5 6.5 0 1013 0v1.5a.75.75 0 01-1.5 0v-1.5a4.992 4.992 0 01-1.254-1.189l.149.046a.75.75 0 10.23-1.482A41.03 41.03 0 0014 4.193v-.443A2.75 2.75 0 0011.25 1h-2.5zM10 10a.75.75 0 00-1.5 0v4.5a.75.75 0 001.5 0v-4.5z" clip-rule="evenodd" /></svg></button>
+                </div>
+            </div>
+        `;
+    }
+
+    // --- Event Handlers for Card Interactions ---
+    problemList.addEventListener('click', (e) => {
+        const problemCard = e.target.closest('.problem-item');
+        if (!problemCard) return;
+
+        if (e.target.closest('.status-badge')) {
+            const statuses = ['pending', 'in-progress', 'completed'];
+            let currentIndex = statuses.indexOf(problemCard.dataset.status);
+            let nextIndex = (currentIndex + 1) % statuses.length;
+            const problemId = problemCard.dataset.id;
+            const newStatus = statuses[nextIndex];
+            updateStatus(problemId, newStatus);
+            return;
+        }
+
+        if (e.target.closest('.clickable-img')) {
+            viewerImage.src = e.target.closest('.clickable-img').src;
+            openModal(imageViewerModal);
+            return;
+        }
+
+        if (e.target.closest('.delete-btn')) {
+            if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรายการ "${problemCard.dataset.roomId}"?`)) {
+                const problemId = problemCard.dataset.id;
+                deleteProblem(problemId);
+            }
+            return;
+        }
+
+        if (e.target.closest('.edit-btn')) {
+            currentEditingProblemElement = problemCard;
+            document.getElementById('problem-category').value = problemCard.dataset.category;
+            document.getElementById('room-id').value = problemCard.dataset.roomId;
+            document.getElementById('user-name').value = problemCard.dataset.userName;
+            document.getElementById('user-status').value = problemCard.dataset.userStatus;
+            document.getElementById('user-phone').value = problemCard.dataset.userPhone;
+            document.getElementById('user-email').value = problemCard.dataset.userEmail;
+            document.getElementById('problem-desc').value = problemCard.dataset.problemDesc;
+            
+            const imgSrc = problemCard.dataset.imgSrc;
+            if (imgSrc && imgSrc !== "null" && imgSrc !== "undefined") {
+                imagePreview.src = imgSrc;
+                imagePreview.classList.remove('hidden');
+                removeImageBtn.classList.remove('hidden');
+            } else {
+                removeImageBtn.click();
+            }
+            modalTitle.textContent = 'แก้ไขปัญหา';
+            submitBtn.textContent = 'อัปเดตปัญหา';
+            openModal(modal);
+        }
+    });
+
+    // --- Form Submission Logic ---
+    problemForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const problemData = {
+        id: currentEditingProblemElement ? currentEditingProblemElement.dataset.id : Date.now(),
+        roomId: document.getElementById('room-id').value,
+        userName: document.getElementById('user-name').value,
+        userStatus: document.getElementById('user-status').value,
+        userPhone: document.getElementById('user-phone').value,
+        userEmail: document.getElementById('user-email').value,
+        problemDesc: document.getElementById('problem-desc').value,
+        imgFile: imageInput.files[0],
+        imgSrc: imagePreview.src.startsWith('data:') ? imagePreview.src : (currentEditingProblemElement ? currentEditingProblemElement.dataset.imgSrc : null),
+        category: document.getElementById('problem-category').value,
+        status: currentEditingProblemElement ? currentEditingProblemElement.dataset.status : 'pending'
+      };
+
+      if (currentEditingProblemElement) {
+        await updateProblem(problemData.id, problemData);
+      } else {
+        await addProblem(problemData);
+      }
+      
+      closeModal(modal);
+    });
+
+    // --- CHATBOT Logic ---
+    chatbotFab.addEventListener('click', () => { chatbotWindow.classList.toggle('hidden'); chatbotWindow.classList.toggle('flex'); });
+    closeChatbotBtn.addEventListener('click', () => { chatbotWindow.classList.add('hidden'); chatbotWindow.classList.remove('flex'); });
+
+    function addMessageToChat(text, sender) {
+        const bubble = document.createElement('div');
+        bubble.className = `w-fit max-w-[80%] rounded-xl p-3 text-sm mb-2 ${sender === 'user' ? 'chat-bubble-user self-end' : 'chat-bubble-bot self-start'}`;
+        bubble.textContent = text;
+        chatbotMessages.appendChild(bubble);
+        chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+    }
+    
+    chatbotForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const userInput = chatbotInput.value.trim();
+        if (!userInput) return;
+        addMessageToChat(userInput, 'user');
+        chatbotInput.value = '';
+        setTimeout(() => addMessageToChat("ผมเป็นบอทสำหรับผู้ใช้งานทั่วไปครับ หากต้องการความช่วยเหลือด้านแอดมิน โปรดดูคู่มือการใช้งาน", 'bot'), 1000);
+    });
+
+    // --- API & Authentication Logic ---
+    const API_URL = "http://192.168.1.6:5000/api";
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+        alert("กรุณา login ก่อน");
+        window.location.href = "login.html";
+    }
+    
+	async function loadProblems() {
+	    try {
+		const res = await fetch(`${API_URL}/admin/problems`, {
+		    headers: { "Authorization": "Bearer " + token }
+		});
+		if (!res.ok) throw new Error('Failed to load problems');
+		const data = await res.json();
+		problemList.innerHTML = "";
+		data.forEach(p => {
+		    const problemData = {
+			id: p.id,
+			roomId: p.room_id,
+			userName: p.user_name,
+			userStatus: p.user_status,
+			userPhone: p.user_phone,
+			userEmail: p.user_email,
+			problemDesc: p.problem_desc,
+			category: p.category,
+   			imgSrc: p.img_path ? `http://172.20.10.2:5000${p.img_path}` : null,
+                        formattedTime: new Date(p.timestamp).toLocaleString('th-TH', { 
+                            hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' 
+                        }),
+			status: p.status
+		    };
+		    const newProblem = document.createElement('div');
+		    newProblem.className = "problem-item bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 transition-all duration-300 hover:shadow-xl hover:-translate-y-1.5 opacity-0 overflow-hidden flex flex-col";
+		    Object.keys(problemData).forEach(key => {
+			newProblem.dataset[key] = problemData[key];
+		    });
+		    newProblem.innerHTML = createProblemCardHTML(problemData);
+		    problemList.prepend(newProblem);
+		});
+		applyStaggerAnimation();
+	    } catch (error) {
+		console.error("Error loading problems:", error);
+		alert("ไม่สามารถโหลดรายการปัญหาได้: " + error.message);
+	    }
+	}
+
+    async function addProblem(problemData) {
+        try {
+            const formData = new FormData();
+            formData.append('room_id', problemData.roomId);
+            formData.append('user_name', problemData.userName);
+            formData.append('user_status', problemData.userStatus);
+            formData.append('user_phone', problemData.userPhone);
+            formData.append('user_email', problemData.userEmail);
+            formData.append('problem_desc', problemData.problemDesc);
+            formData.append('category', problemData.category);
+            if (problemData.imgFile) {
+                formData.append('image', problemData.imgFile);
+            }
+            formData.append('status', problemData.status);
+
+            const res = await fetch(`${API_URL}/admin/problems`, {
+                method: 'POST',
+                headers: { "Authorization": "Bearer " + token },
+                body: formData
+            });
+            if (!res.ok) throw new Error('Failed to add problem');
+            alert('เพิ่มปัญหาเรียบร้อยแล้ว');
+            await loadProblems();
+        } catch (error) {
+            console.error('Error adding problem:', error);
+            alert('ไม่สามารถเพิ่มปัญหาได้: ' + error.message);
+        }
+    }
+
+    async function updateProblem(id, problemData) {
+        try {
+            const formData = new FormData();
+            formData.append('room_id', problemData.roomId);
+            formData.append('user_name', problemData.userName);
+            formData.append('user_status', problemData.userStatus);
+            formData.append('user_phone', problemData.userPhone);
+            formData.append('user_email', problemData.userEmail);
+            formData.append('problem_desc', problemData.problemDesc);
+            formData.append('category', problemData.category);
+            if (problemData.imgFile) {
+                formData.append('image', problemData.imgFile);
+            }
+            formData.append('status', problemData.status);
+
+            const res = await fetch(`${API_URL}/admin/problems/${id}`, {
+                method: "PUT",
+                headers: { "Authorization": "Bearer " + token },
+                body: formData
+            });
+            if (!res.ok) throw new Error('Failed to update problem');
+            alert('อัปเดตเรียบร้อยแล้ว');
+            await loadProblems();
+        } catch (error) {
+            console.error("Error updating problem:", error);
+            alert("ไม่สามารถอัปเดตได้: " + error.message);
+        }
+    }
+
+    async function updateStatus(id, newStatus) {
+        try {
+            const res = await fetch(`${API_URL}/admin/problems/${id}`, {
+                method: "PUT",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            if (!res.ok) throw new Error('Failed to update status');
+            alert("อัปเดตสถานะเรียบร้อย");
+            await loadProblems();
+        } catch (error) {
+            console.error("Error updating status:", error);
+            alert("ไม่สามารถอัปเดตสถานะได้: " + error.message);
+        }
+    }
+
+    async function deleteProblem(id) {
+        try {
+            const res = await fetch(`${API_URL}/admin/problems/${id}`, {
+                method: "DELETE",
+                headers: { "Authorization": "Bearer " + token }
+            });
+            if (!res.ok) throw new Error('Failed to delete problem');
+            alert("ลบเรียบร้อยแล้ว");
+            await loadProblems();
+        } catch (error) {
+            console.error("Error deleting problem:", error);
+            alert("ไม่สามารถลบปัญหาได้: " + error.message);
+        }
+    }
+
+    // --- Initial Load ---
+    document.addEventListener('DOMContentLoaded', () => {
+        updateThemeIcons();
+        loadProblems();
+        addMessageToChat('สวัสดีแอดมิน! หากมีข้อสงสัย โปรดดูคู่มือการใช้งานสำหรับผู้ดูแลระบบ', 'bot');
+    });
+
+  </script>
+</body>
+</html>

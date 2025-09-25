@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login - Toilet Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans Thai"', 'sans-serif'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      background-color: #f0f4f8; /* Soft blue-gray background */
+    }
+    .login-container {
+      background: rgba(255, 255, 255, 0.6);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body class="font-sans flex items-center justify-center min-h-screen p-4">
+  
+  <div class="login-container rounded-2xl shadow-xl p-8 sm:p-12 w-full max-w-md relative">
+    <a href="index.html" class="absolute top-6 left-6 text-slate-500 hover:text-slate-800 transition-colors" title="กลับสู่หน้าหลัก">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25" />
+        </svg>
+    </a>
+
+    <div class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">
+          Admin Login
+        </h1>
+        <p class="text-slate-500 mt-2">สำหรับผู้ดูแลระบบเท่านั้น</p>
+    </div>
+
+    <form id="loginForm">
+        <div class="mb-5">
+          <label for="username" class="block text-md font-medium text-slate-700 mb-2">Admin Name</label>
+          <input type="text" id="username" name="username" class="w-full p-3 bg-white/50 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
+        </div>
+        <div class="mb-8">
+          <label for="password" class="block text-md font-medium text-slate-700 mb-2">Password</label>
+          <input type="password" id="password" name="password" class="w-full p-3 bg-white/50 border-2 border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required />
+        </div>
+        <button type="submit" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 text-white font-bold text-base py-3 px-8 rounded-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform active:scale-95">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+  </div>
+
+  <script>
+    const API_URL = "http://192.168.1.6:5000/api";
+    
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        let body = {
+            username: e.target.username.value,
+            password: e.target.password.value
+        };
+        let res = await fetch(`${API_URL}/admin/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body)
+        });
+        let data = await res.json();
+        if (data.token) {
+            localStorage.setItem("token", data.token);
+            window.location.href = "admin.html";
+        } else {
+            alert("Login ไม่สำเร็จ");
+        }
+    });
+  </script>
+</body>
+</html>
