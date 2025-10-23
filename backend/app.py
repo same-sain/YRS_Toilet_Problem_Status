@@ -62,11 +62,9 @@ def admin_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-# ---------- Public endpoints ----------
 
 @app.route('/api/problems', methods=['GET'])
 def list_problems():
-    # public: return recent problems (no contact info unless admin)
     q = Problem.query.order_by(Problem.created_at.desc()).all()
     out = []
     for p in q:
@@ -77,7 +75,6 @@ def list_problems():
             'user_name': p.user_name,
             'user_status': p.user_status,
             'problem_desc': p.problem_desc,
-            # DO NOT return contact info publicly unless requested (but we include it if admin)
             'img_path': p.img_path,
             'status': p.status,
             'timestamp': p.created_at.isoformat() if p.created_at else None,
@@ -121,9 +118,7 @@ def create_problem():
 @app.route('/uploads/<filename>')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-
-# ---------- Admin endpoints ----------
-
+# Admin endpoint
 @app.route('/api/admin/login', methods=['POST'])
 def admin_login():
     body = request.json or {}
@@ -204,10 +199,9 @@ def admin_update_problem(problem_id):
     if not p:
         return jsonify({'error':'not found'}), 404
 
-    # อ่านข้อมูลจาก JSON ถ้ามี มิฉะนั้นอ่านจาก form
+    # อ่านข้อมูลจาก JSON 
     data = request.get_json(silent=True)
     if not data:
-        # request.form is an ImmutableMultiDict -> convert to normal dict
         data = dict(request.form) if request.form else {}
 
     # อัปเดตฟิลด์ที่มีใน data (เช็ค presence ของ key โดยตรง)
